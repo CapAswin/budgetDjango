@@ -43,31 +43,35 @@ budgetDjango/
 ## Setup
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.9+
 - pip
 
 ### Installation
 
 ```bash
-# Clone the repo
+# 1. Clone and enter the project
 git clone <repo-url> && cd budgetDjango
 
-# Create and activate virtual environment
+# 2. Create virtual environment (one-time)
 python3 -m venv .venv
+
+# 3. Activate it (every new terminal session)
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# 4. Install dependencies (use python -m pip, never bare pip)
+python -m pip install -r requirements.txt
 
-# Apply migrations
+# 5. Apply database migrations
 python manage.py migrate
 
-# Create a superuser for Django admin
+# 6. Create a superuser for Django admin
 python manage.py createsuperuser
 
-# Start the dev server
+# 7. Start the dev server
 python manage.py runserver
 ```
+
+> ⚠️ **Common mistakes:** (1) Skipping `source .venv/bin/activate` — you'll get `ModuleNotFoundError`. (2) Using `pip install` instead of `python -m pip install` — `pip` may not be on PATH even after activation. Always use `python -m pip`.
 
 The API will be available at `http://127.0.0.1:8000/api/`.
 
