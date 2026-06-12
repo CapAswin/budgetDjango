@@ -5,7 +5,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from .Serializers import UserSerializer
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .Serializers import TransactionSerializer
@@ -283,6 +283,12 @@ class RoomExpenseView(APIView):
         member_ids = set(
             RoomMembership.objects.filter(room=room).values_list('user_id', flat=True)
         )
+        paid_by_id = data.get('paid_by') or request.user.id
+        if paid_by_id not in member_ids:
+            return Response(
+                {"paid_by": "Payer must be a member of this room."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Determine share map {user_id: share_amount}
         share_map = {}
@@ -332,7 +338,7 @@ class RoomExpenseView(APIView):
         with db_transaction.atomic():
             expense = RoomExpense.objects.create(
                 room=room,
-                paid_by=request.user,
+                paid_by_id=paid_by_id,
                 amount=amount,
                 description=description,
             )
@@ -343,6 +349,51 @@ class RoomExpenseView(APIView):
 
         expense = RoomExpense.objects.prefetch_related('shares__user').get(pk=expense.pk)
         return Response(RoomExpenseSerializer(expense).data, status=status.HTTP_201_CREATED)
+
+
+class RoomInfoView(APIView):
+    """GET /api/rooms/<code>/info/ — public, no auth. Returns basic room info for invite preview."""
+    permission_classes = [AllowAny]
+
+    def get(self, request, room_code):
+        try:
+            room = Room.objects.get(room_code=room_code.upper())
+            return Response({
+                'name': room.name,
+                'room_code': room.room_code,
+                'member_count': room.memberships.count(),
+                'created_by': room.created_by.username,
+            })
+        except Room.DoesNotExist:
+            return Response({'error': 'Room not found'}, status=404)
+
+
+class RoomCheckView(APIView):
+    """GET /api/rooms/<code>/check/ — check if current user is a member."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_code):
+        try:
+            room = Room.objects.get(room_code=room_code.upper())
+            is_member = RoomMembership.objects.filter(room=room, user=request.user).exists()
+            return Response({
+                'is_member': is_member,
+                'name': room.name,
+                'room_code': room.room_code,
+            })
+        except Room.DoesNotExist:
+            return Response({'error': 'Room not found'}, status=404)
+
+
+class RoomExpenseDeleteView(APIView):
+    """DELETE /api/rooms/<code>/expenses/<id>/ — delete a room expense."""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, room_code, expense_id, *args, **kwargs):
+        room = _get_member_room_or_403(room_code, request.user)
+        expense = get_object_or_404(RoomExpense, pk=expense_id, room=room)
+        expense.delete()
+        return Response({"detail": "Expense deleted."}, status=status.HTTP_200_OK)
 
 
 class RoomBalanceView(APIView):

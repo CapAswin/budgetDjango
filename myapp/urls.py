@@ -4,6 +4,7 @@ from .views import (
     LogoutAPIView, CategoryView, ChangePasswordView,
     RoomCreateView, RoomJoinView, RoomListView, RoomDetailView,
     RoomLeaveView, RoomExpenseView, RoomBalanceView,
+    RoomInfoView, RoomCheckView, RoomExpenseDeleteView,
 )
 
 urlpatterns = [
@@ -27,6 +28,9 @@ urlpatterns = [
     path('rooms/join/', RoomJoinView.as_view(), name='room-join'),
     path('rooms/<str:room_code>/', RoomDetailView.as_view(), name='room-detail'),
     path('rooms/<str:room_code>/leave/', RoomLeaveView.as_view(), name='room-leave'),
+    path('rooms/<str:room_code>/info/', RoomInfoView.as_view(), name='room-info'),
+    path('rooms/<str:room_code>/check/', RoomCheckView.as_view(), name='room-check'),
     path('rooms/<str:room_code>/expenses/', RoomExpenseView.as_view(), name='room-expenses'),
+    path('rooms/<str:room_code>/expenses/<int:expense_id>/', RoomExpenseDeleteView.as_view(), name='room-expense-delete'),
     path('rooms/<str:room_code>/balances/', RoomBalanceView.as_view(), name='room-balances'),
 ]

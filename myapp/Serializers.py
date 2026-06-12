@@ -173,11 +173,13 @@ class CreateRoomExpenseSerializer(serializers.Serializer):
 
     - `amount`: total amount paid
     - `description`: optional label
+    - `paid_by`: optional user ID who paid (defaults to current user)
     - `split_among`: optional list of user IDs to split among (defaults to all members)
     - `shares`: optional {user_id: amount} dict for custom splits; sum must equal amount
     """
     amount = serializers.FloatField(min_value=0.01)
     description = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    paid_by = serializers.IntegerField(required=False)
     split_among = serializers.ListField(
         child=serializers.IntegerField(), required=False
     )
