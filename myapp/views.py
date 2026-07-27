@@ -43,9 +43,18 @@ class LoginAPIView(generics.GenericAPIView):
     serializer_class = UserSerializer
 
     def post(self, request, *args, **kwargs):
-        username = request.data.get('username')
+        login_id = request.data.get('username') or request.data.get('email')
         password = request.data.get('password')
-        user = authenticate(request, username=username, password=password)
+        if not login_id or not password:
+            return Response({"message": "Username/email and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+        user = authenticate(request, username=login_id, password=password)
+        if user is None:
+            # authenticate() only checks by username; try looking up by email
+            try:
+                user_obj = User.objects.get(email=login_id)
+                user = authenticate(request, username=user_obj.username, password=password)
+            except User.DoesNotExist:
+                pass
         if user:
             token, _ = Token.objects.get_or_create(user=user)
             return Response({"token": token.key})
